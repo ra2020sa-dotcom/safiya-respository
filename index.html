@@ -325,6 +325,10 @@
 <script>
 /* ===================== DATA LAYER ===================== */
 const STORAGE_KEY = "spi_school_initiatives_v1"; // (لم يعد يُستخدم بعد الانتقال إلى Firestore، أُبقي عليه لتفادي كسر أي مرجع قديم)
+const TEACHER_NAME_KEY = "spi_teacher_name"; // يحفظ اسم المعلمة في متصفحها فقط، ليُملأ تلقائياً في زياراتها القادمة
+function loadTeacherName(){
+  try{ return localStorage.getItem(TEACHER_NAME_KEY) || ""; }catch(e){ return ""; }
+}
 
 const GRADES = ["الصف الخامس","الصف السادس","الصف السابع","الصف الثامن"];
 const SECTIONS = ["1","2","3","4","5","6"];
@@ -422,7 +426,7 @@ const state = {
   loading: true,
   syncError: null,
   role: "public", // public | teacher | admin
-  teacherName: "أ. سارة الحارثي",
+  teacherName: loadTeacherName(),
   tab: "board", // board | admin | mine
   filters: { level:"all", grade:"", section:"", subject:"", teacher:"", category:"", minRating:0, q:"" },
   sortDir: "desc",
@@ -608,15 +612,6 @@ function renderHeader(){
         </div>
       </div>
     </div>
-    ${ state.role === 'teacher' ? `
-    <div class="border-t" style="border-color:rgba(250,247,239,0.12)">
-      <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-2 flex items-center gap-2 text-[13px]" style="color:rgba(250,247,239,0.85)">
-        <span>مسجّلة الدخول باسم:</span>
-        <select id="teacherIdentitySelect" class="!bg-[rgba(255,255,255,0.1)] !text-white !border-[rgba(255,255,255,0.25)] rounded-md px-2 py-1 text-[13px]">
-          ${teacherNames().map(t=>`<option ${t===state.teacherName?'selected':''} value="${esc(t)}">${esc(t)}</option>`).join('')}
-        </select>
-      </div>
-    </div>` : ''}
   </header>`;
 }
 
@@ -1011,7 +1006,7 @@ function renderFormModal(payload){
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
             <label class="field-label" for="f_teacher">اسم المعلم</label>
-            <input id="f_teacher" required class="input-base" value="${esc(item?.teacher || (state.role==='teacher' ? state.teacherName : ''))}" ${state.role==='teacher' ? 'readonly' : ''} placeholder="أ. ...">
+            <input id="f_teacher" required class="input-base" value="${esc(item?.teacher || (state.role==='teacher' ? state.teacherName : ''))}" placeholder="أ. ...">
           </div>
           <div>
             <label class="field-label" for="f_grade">الصف</label>
@@ -1191,9 +1186,6 @@ function bindEvents(){
     }
   });
 
-  const teacherSel = document.getElementById('teacherIdentitySelect');
-  if(teacherSel) teacherSel.addEventListener('change', e=>{ state.teacherName = e.target.value; render(); });
-
   root.querySelectorAll('[data-tab]').forEach(btn=>{
     btn.addEventListener('click', ()=>{ state.tab = btn.getAttribute('data-tab'); render(); });
   });
@@ -1355,6 +1347,11 @@ function onSubmitForm(e){
   if(!title || !teacher || !grade || !subject || !category){
     showToast('يرجى تعبئة جميع الحقول المطلوبة.', 'error');
     return;
+  }
+
+  if(state.role === 'teacher' && teacher !== state.teacherName){
+    state.teacherName = teacher;
+    try{ localStorage.setItem(TEACHER_NAME_KEY, teacher); }catch(err){}
   }
 
   const links = Array.from(form.querySelectorAll('.link-row')).map(row=>({
