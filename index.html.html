@@ -612,15 +612,6 @@ function renderHeader(){
         </div>
       </div>
     </div>
-    ${ state.role === 'teacher' ? `
-    <div class="border-t" style="border-color:rgba(250,247,239,0.12)">
-      <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-2 flex items-center gap-2 text-[13px] flex-wrap" style="color:rgba(250,247,239,0.85)">
-        <span>الاسم:</span>
-        <input id="teacherIdentityInput" type="text" value="${esc(state.teacherName)}" placeholder="اكتبي اسمك الكامل (مثال: أ. سارة الحارثي)"
-          class="!bg-[rgba(255,255,255,0.1)] !text-white !border-[rgba(255,255,255,0.25)] rounded-md px-2.5 py-1.5 text-[13px] flex-1 min-w-[220px]" />
-        <span class="text-[11.5px]" style="color:rgba(250,247,239,0.6)">يُستخدم هذا الاسم في مبادراتك ويُحفظ في هذا المتصفح فقط</span>
-      </div>
-    </div>` : ''}
   </header>`;
 }
 
@@ -1007,10 +998,6 @@ function renderFormModal(payload){
       </div>
 
       <div class="p-5 space-y-4">
-        ${ (state.role==='teacher' && !editing && !state.teacherName) ? `
-        <div class="rounded-[var(--radius-sm)] p-3 text-[13px] font-semibold" style="background:var(--coral-soft); color:var(--coral); border:1px solid var(--coral)">
-          الرجاء كتابة اسمك في حقل "الاسم" أعلى الصفحة أولاً، حتى تُنسب المبادرة إليك ويمكنك تعديلها لاحقاً.
-        </div>` : '' }
         <div>
           <label class="field-label" for="f_title">عنوان المبادرة</label>
           <input id="f_title" required class="input-base" value="${esc(item?.title || '')}" placeholder="مثال: مشروع القراءة الحرة">
@@ -1019,7 +1006,7 @@ function renderFormModal(payload){
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           <div>
             <label class="field-label" for="f_teacher">اسم المعلم</label>
-            <input id="f_teacher" required class="input-base" value="${esc(item?.teacher || (state.role==='teacher' ? state.teacherName : ''))}" ${state.role==='teacher' ? 'readonly' : ''} placeholder="${state.role==='teacher' ? 'اكتبي اسمك أعلى الصفحة' : 'أ. ...'}">
+            <input id="f_teacher" required class="input-base" value="${esc(item?.teacher || (state.role==='teacher' ? state.teacherName : ''))}" placeholder="أ. ...">
           </div>
           <div>
             <label class="field-label" for="f_grade">الصف</label>
@@ -1199,13 +1186,6 @@ function bindEvents(){
     }
   });
 
-  const teacherInput = document.getElementById('teacherIdentityInput');
-  if(teacherInput) teacherInput.addEventListener('change', e=>{
-    state.teacherName = e.target.value.trim();
-    try{ localStorage.setItem(TEACHER_NAME_KEY, state.teacherName); }catch(err){}
-    render();
-  });
-
   root.querySelectorAll('[data-tab]').forEach(btn=>{
     btn.addEventListener('click', ()=>{ state.tab = btn.getAttribute('data-tab'); render(); });
   });
@@ -1218,15 +1198,7 @@ function bindEvents(){
   if(btnSortDir) btnSortDir.addEventListener('click', ()=>{ state.sortDir = state.sortDir==='desc'?'asc':'desc'; render(); });
 
   const btnAdd = document.getElementById('btnAdd');
-  if(btnAdd) btnAdd.addEventListener('click', ()=>{
-    if(state.role==='teacher' && !state.teacherName){
-      showToast('يرجى كتابة اسمك في حقل "الاسم" أعلى الصفحة أولاً.', 'error');
-      const nameInput = document.getElementById('teacherIdentityInput');
-      if(nameInput) nameInput.focus();
-      return;
-    }
-    state.modal = { type:'form', payload:null }; render();
-  });
+  if(btnAdd) btnAdd.addEventListener('click', ()=>{ state.modal = { type:'form', payload:null }; render(); });
 
   ['fltQ','fltGrade','fltSection','fltSubject','fltTeacher','fltCategory','fltRating'].forEach(id=>{
     const el = document.getElementById(id);
@@ -1375,6 +1347,11 @@ function onSubmitForm(e){
   if(!title || !teacher || !grade || !subject || !category){
     showToast('يرجى تعبئة جميع الحقول المطلوبة.', 'error');
     return;
+  }
+
+  if(state.role === 'teacher' && teacher !== state.teacherName){
+    state.teacherName = teacher;
+    try{ localStorage.setItem(TEACHER_NAME_KEY, teacher); }catch(err){}
   }
 
   const links = Array.from(form.querySelectorAll('.link-row')).map(row=>({
