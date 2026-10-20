@@ -552,7 +552,7 @@ function applyFilters(list){
   const f = state.filters;
   return list.filter(i=>{
     if(f.level !== 'all' && i.level !== f.level) return false;
-    if(f.grade && i.grade !== f.grade) return false;
+    if(f.grade && !itemGrades(i).includes(f.grade)) return false;
     if(f.section && i.section !== f.section) return false;
     if(f.subject && i.subject !== f.subject) return false;
     if(f.teacher && i.teacher !== f.teacher) return false;
@@ -602,8 +602,13 @@ function allCategories(){
 function esc(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
+function itemGrades(item){
+  return (Array.isArray(item.grades) && item.grades.length) ? item.grades : (item.grade ? [item.grade] : []);
+}
 function gradeLabel(item){
-  return item.section ? `${item.grade} - شعبة ${item.section}` : item.grade;
+  const gs = itemGrades(item);
+  if(gs.length > 1) return gs.join('، ');
+  return item.section ? `${gs[0] || ''} - شعبة ${item.section}` : (gs[0] || '');
 }
 function fmtDate(ts){
   try{ return new Date(ts).toLocaleDateString('ar-SA-u-nu-latn', { year:'numeric', month:'long', day:'numeric' }); }
@@ -1142,14 +1147,13 @@ function renderFormModal(payload){
             <input id="f_teacher" required class="input-base" value="${esc(item?.teacher || (state.role==='teacher' ? state.teacherName : (state.role==='parent' ? state.parentName : '')))}" placeholder="${parentMode ? 'الاسم الكريم' : 'أ. ...'}">
           </div>
           <div>
-            <label class="field-label" for="f_grade">${parentMode ? 'صف الابنة' : 'الصف'}</label>
-            <select id="f_grade" required class="input-base">
-              <option value="" disabled ${!item?.grade?'selected':''}>اختاري الصف</option>
-              ${GRADES.map(g=>`<option value="${esc(g)}" ${item?.grade===g?'selected':''}>${esc(g)}</option>`).join('')}
-            </select>
+            <label class="field-label">${parentMode ? 'صف الابنة' : 'الصف'} <span style="color:var(--ink-soft); font-weight:500;">(يمكن اختيار أكثر من صف)</span></label>
+            <div id="f_grades" class="flex flex-wrap items-center gap-2">
+              ${GRADES.map(g=>`<label class="level-tab cursor-pointer" style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" name="f_grade" value="${esc(g)}" ${itemGrades(item||{}).includes(g)?'checked':''} class="accent-[var(--teal)]"> ${esc(g)}</label>`).join('')}
+            </div>
           </div>
           <div>
-            <label class="field-label" for="f_section">الشعبة <span style="color:var(--ink-soft); font-weight:500;">(اختياري)</span></label>
+            <label class="field-label" for="f_section">الشعبة <span style="color:var(--ink-soft); font-weight:500;">(اختياري، عند اختيار صف واحد فقط)</span></label>
             <select id="f_section" class="input-base">
               <option value="">بدون تحديد</option>
               ${SECTIONS.map(s=>`<option value="${esc(s)}" ${item?.section===s?'selected':''}>شعبة ${esc(s)}</option>`).join('')}
@@ -1480,6 +1484,14 @@ function bindEvents(){
     });
   });
 
+  const gradeBoxes = document.querySelectorAll('input[name="f_grade"]');
+  const fSection = document.getElementById('f_section');
+  const syncSection = ()=>{
+    const n = Array.from(gradeBoxes).filter(x=>x.checked).length;
+    if(fSection){ fSection.disabled = n > 1; if(n > 1) fSection.value = ''; }
+  };
+  gradeBoxes.forEach(x=>x.addEventListener('change', syncSection));
+  syncSection();
   const fSub = document.getElementById('f_subject');
   const fNewSub = document.getElementById('f_newsubject');
   if(fSub && fNewSub) fSub.addEventListener('change', ()=>{
@@ -1555,8 +1567,9 @@ function onSubmitForm(e){
 
   const title = document.getElementById('f_title').value.trim();
   const teacher = document.getElementById('f_teacher').value.trim();
-  const grade = document.getElementById('f_grade').value;
-  const section = document.getElementById('f_section').value;
+  const grades = Array.from(form.querySelectorAll('input[name="f_grade"]:checked')).map(x=>x.value);
+  const grade = grades[0] || '';
+  const section = grades.length === 1 ? document.getElementById('f_section').value : '';
   const parentMode = form.getAttribute('data-parent') === '1';
   let subject = parentMode ? '' : document.getElementById('f_subject').value;
   if(subject === '__other__'){
@@ -1575,7 +1588,7 @@ function onSubmitForm(e){
   const level = parentMode ? 'parent' : form.querySelector('input[name="f_level"]:checked').value;
   const description = document.getElementById('f_desc').value.trim();
 
-  if(!title || !teacher || !grade || (!parentMode && !subject) || !category){
+  if(!title || !teacher || !grades.length || (!parentMode && !subject) || !category){
     showToast('يرجى تعبئة جميع الحقول المطلوبة.', 'error');
     return;
   }
@@ -1605,11 +1618,11 @@ function onSubmitForm(e){
   let finalItem;
   if(id){
     const existing = state.initiatives.find(i=>i.id===id);
-    finalItem = Object.assign({}, existing, { title, teacher, grade, section, subject, category, level, description, links });
+    finalItem = Object.assign({}, existing, { title, teacher, grade, grades, section, subject, category, level, description, links });
     if(isAdmin){ finalItem.points = points; finalItem.rating = rating; finalItem.status = status; }
   }else{
     finalItem = {
-      id: uid(), title, teacher, grade, section, subject, category, level, description, links,
+      id: uid(), title, teacher, grade, grades, section, subject, category, level, description, links,
       points: isAdmin ? points : 0,
       rating: isAdmin ? rating : 0,
       status: isAdmin ? status : 'pending',
