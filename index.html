@@ -796,7 +796,7 @@ function renderFilterBar(){
         <button class="level-tab" data-level="all" aria-pressed="${f.level==='all'}">كل المستويات</button>
         <button class="level-tab" data-level="classroom" aria-pressed="${f.level==='classroom'}">${LEVELS.classroom}</button>
         <button class="level-tab" data-level="teacher" aria-pressed="${f.level==='teacher'}">${LEVELS.teacher}</button>
-        <button class="level-tab" data-level="parent" aria-pressed="${f.level==='parent'}">مبادرات أولياء الأمور</button>
+        ${ (state.role==='public' || state.role==='parent') ? '' : `<button class="level-tab" data-level="parent" aria-pressed="${f.level==='parent'}">مبادرات أولياء الأمور</button>` }
       </div>
       <div class="flex items-center gap-2">
         ${ canAdd() ? `<button id="btnAdd" class="btn btn-gold">${ICONS.plus}<span>إضافة مبادرة</span></button>` : '' }
@@ -1300,7 +1300,7 @@ function bindEvents(){
       if(target !== 'admin') state.adminUnlocked = false;     // الخروج من وضع المشرف يلغي الجلسة
       if(target !== 'teacher') state.teacherUnlocked = false; // الخروج من وضع المعلم يلغي الجلسة
       state.role = target;
-      state.tab = 'board';
+      state.tab = 'board'; state.filters.level = 'all';
       render();
     });
   });
@@ -1315,7 +1315,7 @@ function bindEvents(){
       if(role === 'teacher'){ state.teacherUnlocked = true; state.adminUnlocked = false; }
       else { state.adminUnlocked = true; state.teacherUnlocked = false; }
       state.role = role;
-      state.tab = 'board';
+      state.tab = 'board'; state.filters.level = 'all';
       state.modal = null;
       render();
     }else{
