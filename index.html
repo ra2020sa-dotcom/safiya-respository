@@ -591,6 +591,10 @@ const ICONS = {
   xplatform: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.9l-5.4-6.6L4.5 22H1.4l8.1-9.3L1 2h7l4.9 6.1L18.9 2Zm-1.2 18h1.9L7.4 4H5.4l12.3 16Z"/></svg>`,
 };
 
+function allCategories(){
+  const extra = Array.from(new Set((state.initiatives||[]).map(i=>i.category).filter(c=>c && !CATEGORIES.includes(c)))).sort((a,b)=>a.localeCompare('ar'));
+  return CATEGORIES.concat(extra);
+}
 function esc(s){
   return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 }
@@ -830,7 +834,7 @@ function renderFilterBar(){
       </select>
       <select id="fltCategory" class="input-base w-auto min-w-[130px]">
         <option value="">كل الفئات</option>
-        ${CATEGORIES.map(c=>`<option value="${esc(c)}" ${f.category===c?'selected':''}>${esc(c)}</option>`).join('')}
+        ${allCategories().map(c=>`<option value="${esc(c)}" ${f.category===c?'selected':''}>${esc(c)}</option>`).join('')}
       </select>
       <select id="fltRating" class="input-base w-auto min-w-[110px]">
         <option value="0" ${f.minRating==0?'selected':''}>كل التقييمات</option>
@@ -1161,8 +1165,10 @@ function renderFormModal(payload){
             <label class="field-label" for="f_category">الفئة</label>
             <select id="f_category" required class="input-base">
               <option value="" disabled ${!item?.category?'selected':''}>اختاري الفئة</option>
-              ${CATEGORIES.map(c=>`<option value="${esc(c)}" ${item?.category===c?'selected':''}>${esc(c)}</option>`).join('')}
+              ${allCategories().map(c=>`<option value="${esc(c)}" ${item?.category===c?'selected':''}>${esc(c)}</option>`).join('')}
+              <option value="__new__">＋ فئة جديدة (غير موجودة في القائمة)…</option>
             </select>
+            <input id="f_newcat" maxlength="40" class="input-base hidden mt-2" placeholder="اكتبي اسم الفئة الجديدة (مثال: ريادة الأعمال)">
           </div>
         </div>
 
@@ -1469,6 +1475,13 @@ function bindEvents(){
     });
   });
 
+  const fCat = document.getElementById('f_category');
+  const fNewCat = document.getElementById('f_newcat');
+  if(fCat && fNewCat) fCat.addEventListener('change', ()=>{
+    const isNew = fCat.value === '__new__';
+    fNewCat.classList.toggle('hidden', !isNew);
+    if(isNew) fNewCat.focus();
+  });
   const btnAddLink = document.getElementById('btnAddLink');
   if(btnAddLink) btnAddLink.addEventListener('click', ()=>{
     const wrap = document.getElementById('linksWrap');
@@ -1534,7 +1547,13 @@ function onSubmitForm(e){
   const section = document.getElementById('f_section').value;
   const parentMode = form.getAttribute('data-parent') === '1';
   const subject = parentMode ? '' : document.getElementById('f_subject').value;
-  const category = document.getElementById('f_category').value;
+  let category = document.getElementById('f_category').value;
+  if(category === '__new__'){
+    const typed = (document.getElementById('f_newcat').value || '').replace(/\s+/g,' ').trim();
+    if(!typed){ showToast('اكتبي اسم الفئة الجديدة.', 'error'); return; }
+    const existingCat = allCategories().find(c => c.trim().toLowerCase() === typed.toLowerCase());
+    category = existingCat || typed.slice(0,40);
+  }
   const level = parentMode ? 'parent' : form.querySelector('input[name="f_level"]:checked').value;
   const description = document.getElementById('f_desc').value.trim();
 
