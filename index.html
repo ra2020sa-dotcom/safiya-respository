@@ -364,7 +364,7 @@ function loadParentName(){
 
 const GRADES = ["الصف الخامس","الصف السادس","الصف السابع","الصف الثامن"];
 const SECTIONS = ["1","2","3","4","5","6"];
-const SUBJECTS = ["اللغة العربية","الرياضيات","العلوم","اللغة الإنجليزية","الدراسات الاجتماعية","التربية الفنية","الحاسب الآلي","التربية البدنية"];
+const SUBJECTS = ["اللغة العربية","الرياضيات","العلوم","اللغة الإنجليزية","الدراسات الاجتماعية","التربية الفنية","الحاسب الآلي","التربية البدنية","ديني قيمي"];
 const CATEGORIES = ["إبداع وابتكار","خدمة مجتمعية","بيئة واستدامة","تقنية ورقمنة","صحة ولياقة","ثقافة وأدب","الهوية والمواطنة","التحصيل الدراسي","القيم والسلوكيات","الصحة البدنية","المواهب الطلابية"];
 const LEVELS = { classroom:"مستوى الفصل", teacher:"مستوى المعلم", parent:"مبادرة ولي أمر" };
 
@@ -591,6 +591,10 @@ const ICONS = {
   xplatform: `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.9 2H22l-7.6 8.7L23 22h-6.9l-5.4-6.6L4.5 22H1.4l8.1-9.3L1 2h7l4.9 6.1L18.9 2Zm-1.2 18h1.9L7.4 4H5.4l12.3 16Z"/></svg>`,
 };
 
+function allSubjects(){
+  const extra = Array.from(new Set((state.initiatives||[]).map(i=>i.subject).filter(c=>c && !SUBJECTS.includes(c)))).sort((a,b)=>a.localeCompare('ar'));
+  return SUBJECTS.concat(extra);
+}
 function allCategories(){
   const extra = Array.from(new Set((state.initiatives||[]).map(i=>i.category).filter(c=>c && !CATEGORIES.includes(c)))).sort((a,b)=>a.localeCompare('ar'));
   return CATEGORIES.concat(extra);
@@ -825,7 +829,7 @@ function renderFilterBar(){
       </select>
       <select id="fltSubject" class="input-base w-auto min-w-[130px]">
         <option value="">كل المواد</option>
-        ${SUBJECTS.map(s=>`<option value="${esc(s)}" ${f.subject===s?'selected':''}>${esc(s)}</option>`).join('')}
+        ${allSubjects().map(s=>`<option value="${esc(s)}" ${f.subject===s?'selected':''}>${esc(s)}</option>`).join('')}
       </select>
       <select id="fltTeacher" class="input-base w-auto min-w-[140px]">
         <option value="">كل المعلمين</option>
@@ -1156,8 +1160,10 @@ function renderFormModal(payload){
             <label class="field-label" for="f_subject">المادة</label>
             <select id="f_subject" required class="input-base">
               <option value="" disabled ${!item?.subject?'selected':''}>اختاري المادة</option>
-              ${SUBJECTS.map(s=>`<option value="${esc(s)}" ${item?.subject===s?'selected':''}>${esc(s)}</option>`).join('')}
+              ${allSubjects().map(s=>`<option value="${esc(s)}" ${item?.subject===s?'selected':''}>${esc(s)}</option>`).join('')}
+<option value="__other__">أخرى (اكتبي اسم المادة أو التخصص)…</option>
             </select>
+            <input id="f_newsubject" maxlength="40" class="input-base hidden mt-2" placeholder="اكتبي اسم المادة أو التخصص (مثال: الأخصائي الاجتماعي)">
           </div>
           ` }
           <div>
@@ -1474,6 +1480,13 @@ function bindEvents(){
     });
   });
 
+  const fSub = document.getElementById('f_subject');
+  const fNewSub = document.getElementById('f_newsubject');
+  if(fSub && fNewSub) fSub.addEventListener('change', ()=>{
+    const isOther = fSub.value === '__other__';
+    fNewSub.classList.toggle('hidden', !isOther);
+    if(isOther) fNewSub.focus();
+  });
   const fCat = document.getElementById('f_category');
   const fNewCat = document.getElementById('f_newcat');
   if(fCat && fNewCat) fCat.addEventListener('change', ()=>{
@@ -1545,7 +1558,13 @@ function onSubmitForm(e){
   const grade = document.getElementById('f_grade').value;
   const section = document.getElementById('f_section').value;
   const parentMode = form.getAttribute('data-parent') === '1';
-  const subject = parentMode ? '' : document.getElementById('f_subject').value;
+  let subject = parentMode ? '' : document.getElementById('f_subject').value;
+  if(subject === '__other__'){
+    const typedSub = (document.getElementById('f_newsubject').value || '').replace(/\s+/g,' ').trim();
+    if(!typedSub){ showToast('اكتبي اسم المادة أو التخصص.', 'error'); return; }
+    const existingSub = allSubjects().find(c => c.trim().toLowerCase() === typedSub.toLowerCase());
+    subject = existingSub || typedSub.slice(0,40);
+  }
   let category = document.getElementById('f_category').value;
   if(category === '__new__'){
     const typed = (document.getElementById('f_newcat').value || '').replace(/\s+/g,' ').trim();
