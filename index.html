@@ -624,7 +624,7 @@ function canDelete(item){
   if(state.role === 'parent') return item.source==='parent' && item.teacher === state.parentName && item.status === 'pending';
   return false;
 }
-function canAdd(){ return state.role === 'admin' || state.role === 'teacher' || state.role === 'parent'; }
+function canAdd(){ return state.role === 'admin' || state.role === 'teacher'; }
 function myName(){ return state.role === 'parent' ? state.parentName : state.teacherName; }
 function isMine(i){ return i.teacher === myName() && (state.role === 'parent') === (i.source === 'parent'); }
 
@@ -974,13 +974,13 @@ function renderMine(){
         <p class="font-display font-extrabold text-[20px]">${rankIndex ? '#'+rankIndex : '—'}</p>
       </div>
       <div class="flex-1"></div>
-      <button id="btnAdd" class="btn btn-gold">${ICONS.plus}<span>إضافة مبادرة</span></button>
+      ${ canAdd() ? `<button id="btnAdd" class="btn btn-gold">${ICONS.plus}<span>إضافة مبادرة</span></button>` : '' }
     </div>
 
     ${ mine.length===0 ? `
       <div class="empty-state">
         <p class="font-display font-bold text-lg mb-1">لا توجد مبادرات مضافة بعد</p>
-        <p class="text-sm">ابدئي بإضافة أول مبادرة لفصلك أو لأسلوبك التعليمي.</p>
+        <p class="text-sm">${ canAdd() ? 'ابدئي بإضافة أول مبادرة لفصلك أو لأسلوبك التعليمي.' : 'ستظهر هنا المبادرات المرتبطة بك عند اعتمادها.' }</p>
       </div>
     ` : `<div class="space-y-2.5">${mine.map((i,idx)=>renderRow(i, idx+1)).join('')}</div>` }
   </div>`;
@@ -1356,7 +1356,7 @@ function bindEvents(){
     }
   });
   const btnAdd = document.getElementById('btnAdd');
-  if(btnAdd) btnAdd.addEventListener('click', ()=>{ state.modal = { type:'form', payload:null }; render(); });
+  if(btnAdd && canAdd()) btnAdd.addEventListener('click', ()=>{ state.modal = { type:'form', payload:null }; render(); });
 
   ['fltQ','fltGrade','fltSection','fltSubject','fltTeacher','fltCategory','fltRating'].forEach(id=>{
     const el = document.getElementById(id);
