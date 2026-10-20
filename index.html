@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>مبادرات صفية</title>
+<title>مبادرات صفية التحصيلية</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@500;700;800;900&family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet">
@@ -654,7 +654,7 @@ function render(){
     <main id="main" class="max-w-[1180px] mx-auto px-4 sm:px-6 pb-16">
       ${renderTabs()}
       <div class="mt-5">
-        ${ state.tab === 'board' ? renderBoard() : state.tab === 'admin' ? renderAdmin() : renderMine() }
+        ${ state.tab === 'board' ? renderBoard() : state.tab === 'admin' ? renderAdmin() : (state.tab === 'mine' && state.role === 'teacher') ? renderMine() : renderBoard() }
       </div>
     </main>
     ${renderFooter()}
@@ -669,7 +669,7 @@ function renderFooter(){
   <footer class="mt-4" style="background:var(--ink); color:var(--paper); padding-bottom:env(safe-area-inset-bottom,0px)">
     <div class="max-w-[1180px] mx-auto px-4 sm:px-6 py-6 flex items-center justify-between gap-4 flex-wrap">
       <div>
-        <p class="font-display font-bold text-[14px]">مبادرات صفية</p>
+        <p class="font-display font-bold text-[14px]">مبادرات صفية التحصيلية</p>
         <p class="text-[12px] mt-0.5" style="color:rgba(250,247,239,0.65)">مدرسة صفية أم المؤمنين (5-8) للبنات</p>
       </div>
       <div class="flex items-center gap-2.5">
@@ -691,7 +691,7 @@ function renderHeader(){
       <div class="logo-plaque" title="وزارة التربية والتعليم"><img src="${LOGO_MOE}" alt="شعار وزارة التربية والتعليم"></div>
 
       <div class="site-title-wrap text-center">
-        <h1 class="site-title font-display font-extrabold text-[24px] sm:text-[34px] md:text-[42px] leading-tight">مبادرات صفية</h1>
+        <h1 class="site-title font-display font-extrabold text-[24px] sm:text-[34px] md:text-[42px] leading-tight">مبادرات صفية التحصيلية</h1>
         <div class="site-title-rule mx-auto"></div>
         <p class="text-[12.5px] sm:text-[14px] mt-1.5 font-semibold tracking-wide" style="color:rgba(250,247,239,0.78)">نبادر &nbsp;•&nbsp; نبدع &nbsp;•&nbsp; نترك أثراً</p>
       </div>
@@ -751,7 +751,7 @@ function renderStatRibbon(){
 function renderTabs(){
   const tabs = [ {id:'board', label:'المتصدرون'} ];
   if(state.role==='admin') tabs.push({id:'admin', label:'لوحة التحكم'});
-  if(state.role==='teacher' || state.role==='parent') tabs.push({id:'mine', label:'مبادراتي'});
+  if(state.role==='teacher') tabs.push({id:'mine', label:'مبادراتي'});
   return `
   <div class="flex items-center gap-5 border-b mt-5" role="tablist" aria-label="أقسام المنصة">
     ${tabs.map(t=>`<button class="tab-btn" data-tab="${t.id}" role="tab" aria-selected="${state.tab===t.id}">${t.label}</button>`).join('')}
