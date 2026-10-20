@@ -800,7 +800,6 @@ function renderFilterBar(){
         <button class="level-tab" data-level="all" aria-pressed="${f.level==='all'}">كل المستويات</button>
         <button class="level-tab" data-level="classroom" aria-pressed="${f.level==='classroom'}">${LEVELS.classroom}</button>
         <button class="level-tab" data-level="teacher" aria-pressed="${f.level==='teacher'}">${LEVELS.teacher}</button>
-        ${ (state.role==='public' || state.role==='parent') ? '' : `<button class="level-tab" data-level="parent" aria-pressed="${f.level==='parent'}">مبادرات أولياء الأمور</button>` }
       </div>
       <div class="flex items-center gap-2">
         ${ canAdd() ? `<button id="btnAdd" class="btn btn-gold">${ICONS.plus}<span>إضافة مبادرة</span></button>` : '' }
